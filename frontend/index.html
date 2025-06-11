@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionnaire sur l'IA et les smartphones</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div id="intro">
+            <p>Aujourd'hui, la Data est très importante. Nos appareils connectés produisent beaucoup de données utiles pour les entreprises. Cela les aide à mieux comprendre nos habitudes.</p>
+            <p>Pour vous en faire la preuve, nous vous proposons de participer, le temps de l'atelier, à un petit quiz sur le thème de l'IA.</p>
+            <h1>Début du questionnaire (Présentations, Connaissances et Feedback sur l'IA)</h1>
+            <button id="start-quiz">Commencer le Quiz</button>
+        </div>
+        <div id="quiz" style="display: none;">
+            <h2>Questionnaire</h2>
+            <form id="monFormulaire">
+                <div id="questions"></div>
+                <div class="form-group">
+                    <label>15. Selon vous, comment l’IA peut-elle contribuer au développement humain à Djibouti ?</label>
+                    <textarea name="question15" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>16. Selon vous, pourquoi est-il important de promouvoir une utilisation éthique et responsable de l’IA avec les données ?</label>
+                    <textarea name="question16" rows="4"></textarea>
+                </div>
+                <button type="submit">Soumettre</button>
+            </form>
+        </div>
+        <div id="results" style="display: none;">
+            <h2>Résultats</h2>
+            <div id="results-text" class="results"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
