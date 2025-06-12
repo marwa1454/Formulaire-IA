@@ -26,5 +26,15 @@ services:
     environment:
       - DATABASE_URL=mysql://root:mysecretpassword@db:3306/formulaire_db
 
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"  # ← CHANGER ICI : utiliser le port 8080
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend
+
 volumes:
   db_data:
