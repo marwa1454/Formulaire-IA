@@ -5,7 +5,13 @@ body {
   padding: 20px;
   background-color: #f0f4f8;
   color: #333;
+  display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
 }
+
 
 .container {
   background-color: white;
@@ -36,6 +42,7 @@ p {
 }
 
 #start-quiz {
+    width: 100%;
   padding: 12px 24px;
   background-color: #3498db;
   color: white;
@@ -44,6 +51,7 @@ p {
   cursor: pointer;
   font-size: 1.1em;
   transition: background-color 0.3s, transform 0.2s;
+  margin-top: 10px;
 }
 
 #start-quiz:hover {
