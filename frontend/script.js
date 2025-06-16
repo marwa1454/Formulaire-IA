@@ -123,10 +123,160 @@ const questions = [
   }
 ];
 
+// ===== FONCTIONS DASHBOARD =====
+
+// Fonction pour ouvrir le dashboard dans une nouvelle page
+function openDashboard() {
+  console.log('Opening dashboard in new tab');
+  window.open('dashboard.html', '_blank');
+}
+
+// ===== SYSTÈME ANTI-DOUBLON =====
+
+// Mode développeur - définir à true pour contourner la protection
+const DEVELOPER_MODE = false; // Changez à false en production
+
+// Configuration de l'API selon l'environnement
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+  ? 'http://localhost:8000' 
+  : 'https://ia-perception-api.ansie.dj';
+
+// Fonction pour générer un identifiant unique basé sur le navigateur
+function generateBrowserFingerprint() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.textBaseline = 'top';
+  ctx.font = '14px Arial';
+  ctx.fillText('Browser fingerprint', 2, 2);
+  
+  const fingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    new Date().getTimezoneOffset(),
+    canvas.toDataURL(),
+    navigator.hardwareConcurrency || 'unknown',
+    navigator.deviceMemory || 'unknown'
+  ].join('|');
+  
+  // Créer un hash simple
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    const char = fingerprint.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Vérifier si l'utilisateur a déjà soumis le questionnaire
+function checkIfAlreadySubmitted() {
+  // En mode développeur, toujours permettre
+  if (DEVELOPER_MODE) {
+    console.log('🔧 Mode développeur activé - protection anti-doublon désactivée');
+    return false;
+  }
+  
+  const browserFingerprint = generateBrowserFingerprint();
+  const submissionKey = `questionnaire_submitted_${browserFingerprint}`;
+  const lastSubmission = localStorage.getItem(submissionKey);
+  
+  if (lastSubmission) {
+    const submissionTime = parseInt(lastSubmission);
+    const now = Date.now();
+    const hoursSinceSubmission = (now - submissionTime) / (1000 * 60 * 60);
+    
+    // Permettre une nouvelle soumission après 24 heures (optionnel)
+    if (hoursSinceSubmission < 24) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Marquer le questionnaire comme soumis
+function markAsSubmitted() {
+  // En mode développeur, ne pas marquer comme soumis
+  if (DEVELOPER_MODE) {
+    console.log('🔧 Mode développeur - ne marque pas comme soumis');
+    return;
+  }
+  
+  const browserFingerprint = generateBrowserFingerprint();
+  const submissionKey = `questionnaire_submitted_${browserFingerprint}`;
+  localStorage.setItem(submissionKey, Date.now().toString());
+}
+
+// Fonction pour réinitialiser le statut (pour les tests)
+function resetSubmissionStatus() {
+  const browserFingerprint = generateBrowserFingerprint();
+  const submissionKey = `questionnaire_submitted_${browserFingerprint}`;
+  localStorage.removeItem(submissionKey);
+  console.log('🔄 Statut de soumission réinitialisé');
+}
+
+// Exposer la fonction reset globalement pour les tests
+window.resetSubmissionStatus = resetSubmissionStatus;
+
+// Afficher le message de questionnaire déjà soumis
+function showAlreadySubmittedMessage() {
+  const container = document.querySelector('.container');
+  container.innerHTML = `
+    <div style="text-align: center; padding: 50px 40px;">
+      <div style="font-size: 4em; margin-bottom: 30px; animation: bounce 2s ease-in-out infinite;">✅</div>
+      <h2 style="color: #2c3e50; margin-bottom: 25px; font-size: 2em; font-weight: 300;">Questionnaire déjà soumis</h2>
+      <p style="color: #7f8c8d; line-height: 1.8; margin-bottom: 40px; font-size: 1.1em;">
+        Vous avez déjà participé à ce questionnaire. Merci pour votre contribution !
+      </p>
+      <button onclick="window.location.reload()" style="
+        padding: 18px 36px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: all 0.4s ease;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+      " onmouseover="this.style.transform='translateY(-3px) scale(1.05)'; this.style.boxShadow='0 12px 35px rgba(102, 126, 234, 0.4)'" 
+         onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 25px rgba(102, 126, 234, 0.3)'">
+        🔄 Actualiser la page
+      </button>
+    </div>
+    <style>
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+      }
+    </style>
+  `;
+}
+
+// ===== CODE QUESTIONNAIRE EXISTANT =====
+
+// Vérifier dès le chargement de la page si l'utilisateur a déjà soumis
+document.addEventListener('DOMContentLoaded', function() {
+  if (checkIfAlreadySubmitted()) {
+    showAlreadySubmittedMessage();
+    return; // Arrêter l'exécution du reste du code
+  }
+});
+
 // Afficher le quiz après clic sur "Commencer"
 const startButton = document.getElementById('start-quiz');
 if (startButton) {
   startButton.addEventListener('click', () => {
+    // Vérifier à nouveau avant de commencer le quiz
+    if (checkIfAlreadySubmitted()) {
+      showAlreadySubmittedMessage();
+      return;
+    }
+    
     console.log('Quiz started');
     document.getElementById('intro').style.display = 'none';
     document.getElementById('quiz').style.display = 'block';
@@ -247,12 +397,15 @@ if (form) {
       answers['question8'] = answers['other-sector'];
     }
     answers['other_sector'] = answers['other-sector'] || null;
+    
+    // NOUVEAU: Ajouter le browser fingerprint pour l'anti-doublon
+    answers['browser_fingerprint'] = generateBrowserFingerprint();
 
     console.log('Answers to send:', JSON.stringify(answers, null, 2));
 
     // Envoyer les données au backend
     try {
-      const response = await fetch('http://localhost:8000/submit', {
+      const response = await fetch(`${API_BASE_URL}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(answers)
@@ -261,6 +414,9 @@ if (form) {
       console.log('Backend response:', result);
       
       if (response.ok) {
+        // MARQUER COMME SOUMIS AVANT D'AFFICHER LE MESSAGE DE FIN
+        markAsSubmitted();
+        
         // Masquer le quiz et afficher uniquement le message de fin
         const quizDiv = document.getElementById('quiz');
         const resultsDiv = document.getElementById('results');
@@ -307,7 +463,13 @@ if (form) {
         }
       } else {
         console.error('Backend error:', result);
-        alert('Erreur lors de l\'envoi des données : ' + (result.detail || result.message || 'Erreur inconnue'));
+        
+        // Gérer spécifiquement l'erreur de doublon (code 409)
+        if (response.status === 409) {
+          showAlreadySubmittedMessage();
+        } else {
+          alert('Erreur lors de l\'envoi des données : ' + (result.detail || result.message || 'Erreur inconnue'));
+        }
       }
     } catch (error) {
       console.error('Fetch error:', error);

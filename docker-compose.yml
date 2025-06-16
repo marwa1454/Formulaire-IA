@@ -1,30 +1,57 @@
+# docker-compose.yml
+version: '3.8'
+
 services:
+  # Base de données MySQL
   db:
     image: mysql:8.0
+    container_name: ia_perception_db
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: mysecretpassword
       MYSQL_DATABASE: formulaire_db
-    ports:
-      - "3307:3306"
     volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pmysecretpassword"]
-      interval: 10s
-      retries: 5
-      timeout: 5s
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - ia_perception_network
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  # API FastAPI
+  api:
+    build: .
+    container_name: ia_perception_api
+    restart: unless-stopped
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     environment:
-      - DATABASE_URL=mysql://root:mysecretpassword@db:3306/formulaire_db
+      - DATABASE_HOST=db
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=mysecretpassword
+      - DATABASE_NAME=formulaire_db
+    networks:
+      - ia_perception_network
+
+  # Serveur web Nginx pour le frontend
+  web:
+    image: nginx:alpine
+    container_name: ia_perception_web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    networks:
+      - ia_perception_network
 
 volumes:
-  db_data:
+  mysql_data:
+
+networks:
+  ia_perception_network:
+    driver: bridge
